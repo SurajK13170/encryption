@@ -26,6 +26,12 @@ IzQpnSVDUVEzv17grVAw078CAwEAAQ==
 -----END PUBLIC KEY-----
 `;
 
+const publicKeyPem2 = `
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7Zq7YKcjmccSBnR9CDHd6IX96V7D/a2XSMs+yCgejSe956mqjA/0Q9h+Xnx7ZZdwe2Tf2Jq/mWXa+gYdnta58otreXg/5oGnNV3Edlixz1Oc8tJg5bG4sIUCGZcbEQGSbm1iC+Fp1kS+YLVG4Su8KoRxcCvRJI2QkfqAruX3JoFjggOkv0TgWCo9z6NV6PPmPN3UsXyH3OPDi3Ewnvd64ngCUKPSBiIDwhLj2yYSShcxH8aWbrz00SJodBJzqgjvCfZuljBXXIN4Ngi/nzqEJ7woKQ1kNgWoHFZy7YL74PihW//4OlniSRoITX+7ChILIv2ezSmAdIjpNJ9Dg9XKcQIDAQAB
+-----END PUBLIC KEY-----
+`;
+
 // Function to encrypt text
 function encryptText(plainText, publicKeyPem) {
   try {
@@ -46,7 +52,22 @@ function encryptText(plainText, publicKeyPem) {
 }
 
 // POST route to encrypt text
-app.post("/encrypt", (req, res) => {
+// app.post("/encrypt", (req, res) => {
+//   const { plainText } = req.body;
+
+//   if (!plainText) {
+//     return res.status(400).json({ error: "plainText is required" });
+//   }
+
+//   try {
+//     const encryptedText = encryptText(plainText, publicKeyPem);
+//     res.json({ encryptedText });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+app.post("/encrypt/abhanumber", (req, res) => {
   const { plainText } = req.body;
 
   if (!plainText) {
@@ -60,6 +81,23 @@ app.post("/encrypt", (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// POST route to encrypt text using publicKeyPem2
+app.post("/encrypt", (req, res) => {
+  const { plainText } = req.body;
+
+  if (!plainText) {
+    return res.status(400).json({ error: "plainText is required" });
+  }
+
+  try {
+    const encryptedText = encryptText(plainText, publicKeyPem2);
+    res.json({ encryptedText });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // Start the server
 app.listen(port, () => {
