@@ -1,14 +1,19 @@
-
 const express = require("express");
-const forge = require("node-forge");
-const cors = require("cors")
+const getAxiosInstance = require("./axiosInstance");
+const axios = require("axios");
+const cors = require("cors");
+const moment = require("moment");
+const { v4: uuidv4 } = require("uuid");
 const app = express();
-
 const port = 3000;
-app.use(express.json());
-app.use(cors())
+const https = require("https");
+const forge = require("node-forge");
+const bodyParser = require("body-parser");
 
-// Example public key (Replace this with your actual RSA public key)
+app.use(cors());
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
+
 const publicKeyPem = `
 -----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAstWB95C5pHLXiYW59qyO
@@ -32,7 +37,16 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7Zq7YKcjmccSBnR9CDHd6IX96V7D/a2XSMs+
 -----END PUBLIC KEY-----
 `;
 
-// Function to encrypt text
+// Create an HTTPS agent that bypasses the proxy
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false, // Only for self-signed certificates (optional)
+});
+
+// Handle data push requests
+app.get("/", (req, res) => {
+  res.send("Updated  Welcome!");
+});
+
 function encryptText(plainText, publicKeyPem) {
   try {
     const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
@@ -50,22 +64,6 @@ function encryptText(plainText, publicKeyPem) {
     throw new Error("Encryption failed: " + error.message);
   }
 }
-
-// POST route to encrypt text
-// app.post("/encrypt", (req, res) => {
-//   const { plainText } = req.body;
-
-//   if (!plainText) {
-//     return res.status(400).json({ error: "plainText is required" });
-//   }
-
-//   try {
-//     const encryptedText = encryptText(plainText, publicKeyPem);
-//     res.json({ encryptedText });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });
 
 app.post("/encrypt/abhanumber", (req, res) => {
   const { plainText } = req.body;
@@ -98,8 +96,50 @@ app.post("/encrypt", (req, res) => {
   }
 });
 
+app.get("/proxy", (req, res) => {
+  res.status(200).json({
+    message: "HospiDash Proxy API",
+  });
+});
 
-// Start the server
+app.post("/HospiDashProxy", async (req, res) => {
+  const { apiUrl, body, headers, method } = req.body;
+
+  if (!apiUrl || !method) {
+    return res
+      .status(400)
+      .json({ message: "Missing apiUrl or method in request" });
+  }
+
+  const timestamp = moment.utc().toISOString();
+  const requestId = uuidv4();
+
+  const finalHeaders = {
+    ...headers,
+    TIMESTAMP: timestamp,
+    "REQUEST-ID": requestId,
+  };
+
+  try {
+    const axiosInstance = getAxiosInstance();
+
+    const response = await axiosInstance({
+      method: method.toLowerCase(),
+      url: apiUrl,
+      data: method.toLowerCase() === "get" ? undefined : body,
+      headers: finalHeaders,
+    });
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error("Error forwarding request:", error.message);
+
+    res.status(error.response ? error.response.status : 500).json({
+      message: error.message,
+    });
+  }
+});
+// Start server
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`server is running on port 3000`);
 });
